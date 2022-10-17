@@ -130,5 +130,5 @@ dmypy.json
 .pyre/
 
 artifacts/
-/always.txt
-/alwayjs.txt
+data/
+.vscode/settings.json
