@@ -1,13 +1,11 @@
+from __future__ import print_function
 from src.utils.all_utils import read_yaml
 import argparse
-import pandas as pd
 import os
 from src.utils.all_utils import create_directory
 from src.utils.models import get_VGG16_model, prepare_model
-import shutil
-from tqdm import tqdm
 import logging
-import tensorflow as tf
+import io
 
 
 logging_str = "[%(asctime)s: %(levelname)s: %(module)s]: %(message)s"
@@ -29,21 +27,41 @@ def prepare_base_model(config_path,params_path):
     base_model_name = artifacts["BASE_MODEL_NAME"]
 
     base_model_dir_path = os.path.join(artifacts_dir,base_model_dir)
-    create_directory([base_model_path])
+    
+    create_directory([base_model_dir_path])
 
     base_model_path = os.path.join(base_model_dir_path,base_model_name)
+    
 
     base_model = get_VGG16_model(input_shape=params["IMAGE_SIZE"],model_path=base_model_path)
 
-    model =prepare_model(
-        model,
+    full_model =prepare_model(
+        base_model,
         classes=params["CLASSES"],
         freeze_all = True,
         freeze_till =None,
         learning_rate = params["LEARNING_RATE"]
     )
 
-    logging.info(f"model summayr {model.summary()}")
+    update_base_model_path = os.path.join(base_model_dir_path,artifacts["UPDATED_BASE_MODEL_NAME"])
+
+    def _log_model_summary(model):
+        """
+        getting terminal output and saving in stream then to log
+        since its directly not saving to log
+        
+        """
+        with io.StringIO() as stream:
+            model.summary(print_fn=lambda x: stream.write(f"{x}\n"))
+
+            summary_str = stream.getvalue()
+        return summary_str
+
+
+    logging.info(f"model summary: \n {_log_model_summary(full_model)}")
+
+    full_model.save(update_base_model_path)
+
 
     
 
